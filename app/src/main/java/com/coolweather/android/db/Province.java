@@ -27,11 +27,11 @@ public class Province extends DataSupport{
             this.provinceName = provinceName;
         }
 
-        public int getProvinceId() {
+        public int getProvinceCode() {
             return provinceCode;
         }
 
-        public void setProvinceId(int provinceId) {
+        public void setProvinceCode(int provinceId) {
             this.provinceCode = provinceId;
         }
 }

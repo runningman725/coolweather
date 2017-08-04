@@ -2,6 +2,7 @@ package com.coolweather.android;
 
 import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -79,6 +80,14 @@ public class ChooseAreaFragment extends Fragment{
                     selectedCity = cityList.get(i);
                     queryCounties();
                 }
+                else if (currentLevel == LEVEL_COUNTY) {
+                    String weatherId=countyList.get(i).getWeatherId();
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                    intent.putExtra("weather_id", weatherId);
+                    startActivity(intent);
+                    Log.d("TAG", "weatherId"+weatherId);
+                    getActivity().finish();
+                }
             }
         });
         backButton.setOnClickListener(new View.OnClickListener() {
@@ -135,12 +144,10 @@ public class ChooseAreaFragment extends Fragment{
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("cityid=?", String.valueOf(selectedCity.getId())).find(County.class);
-        Log.d("TAG", "找到county list"+countyList.size());
         if(countyList.size()>0){
             dataList.clear();
             for(County county:countyList){
                 dataList.add(county.getCountyName());
-                Log.d("TAG", county.getCountyName());
             }
             adaper.notifyDataSetChanged();
             listView.setSelection(0);
@@ -148,7 +155,6 @@ public class ChooseAreaFragment extends Fragment{
         }else {
             String address="http://guolin.tech/api/china/" + selectedProvince.getProvinceCode()+
                     "/"+selectedCity.getCityCode();
-            Log.d("TAG", "去数据库寻找county");
             queryFromServer(address,"county");
         }
     }
@@ -188,7 +194,6 @@ public class ChooseAreaFragment extends Fragment{
                             }else if("city".equals(type)){
                                 queryCities();
                             }else if("county".equals(type)){
-                                Log.d("TAG", "去数据库寻找county");
                                 queryCounties();
                             }
 

@@ -139,14 +139,6 @@ public class WeatherActivity extends AppCompatActivity {
         final String weatherUrl = "https://free-api.heweather.com/v5/weather?city=" + weatherId +
                 "&key=0f933eed22b64039b230901b8a60dfa1";
         Log.d("TAG", "requestWeatherUrl"+weatherUrl);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
@@ -183,9 +175,6 @@ public class WeatherActivity extends AppCompatActivity {
                     }
                 });
             }
-        }).start();
-
-    }
 
     private void showWeatherInfo(Weather weather) {
         String cityName = weather.basic.cityname;

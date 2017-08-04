@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -45,6 +48,10 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView carWashText;
     private TextView sportText;
     private ImageView bingPicImg;
+    public SwipeRefreshLayout swipeRefresh;
+    private String weatherId;
+    public DrawerLayout drawerLayout;
+    private Button navButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,18 +74,20 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText = (TextView) findViewById(R.id.car_wash_text);
         sportText = (TextView) findViewById(R.id.sport_text);
         bingPicImg = (ImageView) findViewById(R.id.bing_pic_img);
+        swipeRefresh = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh);
+        swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        navButton = (Button) findViewById(R.id.nav_button);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString=prefs.getString("weather", null);
-        Log.d("TAG", "onCreate:111 ");
         if(weatherString!=null){
             Weather weather=Utility.handleWeatherResponse(weatherString);
-            Log.d("TAG", "onCreate:222 ");
+            weatherId = weather.basic.weatherId;
             showWeatherInfo(weather);
 
         }else{
-            String weatherId = getIntent().getStringExtra("weather_id");
+            weatherId = getIntent().getStringExtra("weather_id");
             weatherLayout.setVisibility(View.INVISIBLE);
-            Log.d("TAG", "onCreate:333 "+weatherId);
             requestWeather(weatherId);
         }
         String bingPic = prefs.getString("bing_pic", null);
@@ -87,7 +96,18 @@ public class WeatherActivity extends AppCompatActivity {
         }else {
             loadBingPic();
         }
-
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(weatherId);
+            }
+        });
+        navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
     }
 
     private void loadBingPic() {
@@ -115,43 +135,56 @@ public class WeatherActivity extends AppCompatActivity {
         });
     }
 
-    private void requestWeather(final String weatherId) {
-        String weatherUrl = "https://free-api.heweather.com/v5/weather?city=" + weatherId +
+    public void requestWeather(final String weatherId) {
+        final String weatherUrl = "https://free-api.heweather.com/v5/weather?city=" + weatherId +
                 "&key=0f933eed22b64039b230901b8a60dfa1";
         Log.d("TAG", "requestWeatherUrl"+weatherUrl);
-        HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
+        new Thread(new Runnable() {
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                final String responseText = response.body().string();
-                final Weather weather=Utility.handleWeatherResponse(responseText);
-                runOnUiThread(new Runnable() {
+            public void run() {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
                     @Override
-                    public void run() {
-                        if(weather!=null && "ok".equals(weather.status)){
-                            SharedPreferences.Editor editor = PreferenceManager.
-                                    getDefaultSharedPreferences(WeatherActivity.this).edit();
-                            editor.putString("weather", responseText);
-                            editor.apply();
-                            showWeatherInfo(weather);
-                            loadBingPic();
+                    public void onResponse(Call call, Response response) throws IOException {
+                        final String responseText = response.body().string();
+                        final Weather weather=Utility.handleWeatherResponse(responseText);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if(weather!=null && "ok".equals(weather.status)){
+                                    SharedPreferences.Editor editor = PreferenceManager.
+                                            getDefaultSharedPreferences(WeatherActivity.this).edit();
+                                    editor.putString("weather", responseText);
+                                    editor.apply();
+                                    showWeatherInfo(weather);
+                                    loadBingPic();
 
-                        }else {
-                            Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
-                        }
+                                }else {
+                                    Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                                }
+                                swipeRefresh.setRefreshing(false);
+                            }
+                        });
+
+                    }
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                                swipeRefresh.setRefreshing(false);
+                            }
+                        });
                     }
                 });
+            }
+        }).start();
 
-            }
-            @Override
-            public void onFailure(Call call, IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
     }
 
     private void showWeatherInfo(Weather weather) {

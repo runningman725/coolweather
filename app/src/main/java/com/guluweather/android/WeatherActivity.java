@@ -291,16 +291,19 @@ public class WeatherActivity extends AppCompatActivity {
             pm25Text.setText(weather.aqi.city.pm25);
         }
 
-        int n=weather.hourlyForcastList.size();
-        HourlyForcast hourlyForcast=weather.hourlyForcastList.get(0);
-        if(n>0){
+        for(HourlyForcast hourlyForcast:weather.hourlyForcastList){
+            String humid=hourlyForcast.hum+"%";
+            String rain=hourlyForcast.pop+"%";
+            String press=hourlyForcast.press+"hPa";
+            String temp=hourlyForcast.temperature+"℃";
             tvDate.setText(hourlyForcast.date.split(" ")[1]);
-            tvHumidity.setText(hourlyForcast.hum+"%");
-            tvRain.setText(hourlyForcast.pop+"%");
-            tvPressure.setText(hourlyForcast.press+"hPa");
-            tvTemperature.setText(hourlyForcast.temperature+"℃");
+            tvHumidity.setText(humid);
+            tvRain.setText(rain);
+            tvPressure.setText(press);
+            tvTemperature.setText(temp);
             tvWindDirect.setText(hourlyForcast.wind.dir);
         }
+
         String comfort = "舒适度:" + weather.suggestion.comfort.info;
         String carWash = "洗车指数:" + weather.suggestion.carWash.info;
         String sport = "运动建议:" + weather.suggestion.sport.info;
